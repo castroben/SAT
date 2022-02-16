@@ -30,7 +30,7 @@ def check_clause(clause, assignment):
 def check(clauses, assignment):
     global VERBOSE
 
-    if VERBOSE:
+    if True:
         print('Checking assignment {}'.format(assignment))
         print('score of assignment is {}'.format(score(clauses, assignment)))
     for clause in clauses:
@@ -38,6 +38,16 @@ def check(clauses, assignment):
             return clause
     print('Check succeeded!')
     return True
+
+
+def score(clauses, assignment, current_score=0):
+    result = 0
+    for clause in clauses:
+        if check_clause(clause, assignment) is True:
+            result += 1
+    if current_score != 0:
+        return result, current_score - result
+    return result
 
 
 def backtrack_search(num_variables, clauses):
@@ -67,7 +77,7 @@ def random_walk(num_variables, clauses):
     print('Random walk search started')
     assignment = np.ones(num_variables)
     while True:
-        if True == check(clauses, assignment):
+        if check(clauses, assignment) is True:
             break
         var_to_flip = randint(1, num_variables)
         assignment[var_to_flip - 1] *= -1
@@ -104,6 +114,10 @@ def generate_solvable_problem(num_variables):
 
 
 def hw7_submission(num_variables, clauses, timeout):  # timeout is provided in case your method wants to know
+    assignment = np.ones(num_variables)
+    for i in range(num_variables):
+        if random.randint(1, 2) == 1:
+            assignment[i] *= -1
     raise (Exception('NotImplemented'))
 
 
