@@ -113,12 +113,23 @@ def generate_solvable_problem(num_variables):
     return clauses
 
 
-def hw7_submission(num_variables, clauses, timeout):  # timeout is provided in case your method wants to know
+def random_initialization(num_variables):
+    # Random Initialization
     assignment = np.ones(num_variables)
     for i in range(num_variables):
         if random.randint(1, 2) == 1:
             assignment[i] *= -1
-    raise (Exception('NotImplemented'))
+    return assignment
+
+
+def hw7_submission(num_variables, clauses, timeout):  # timeout is provided in case your method wants to know
+    assignment = random_initialization(num_variables)
+
+    while(True):
+        assignment(num_variables)
+        break
+
+    return
 
 
 def solve_SAT(file, save, timeout, num_variables, algorithms, verbose):
