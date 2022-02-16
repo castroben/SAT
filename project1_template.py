@@ -1,5 +1,6 @@
 import random
 from random import randint, sample
+import sys
 import numpy as np
 import signal, datetime
 import argparse
@@ -40,12 +41,12 @@ def check(clauses, assignment):
     return True
 
 
-def score(clauses, assignment, current_score=0):
+def score(clauses, assignment, current_score=-1):
     result = 0
     for clause in clauses:
         if check_clause(clause, assignment) is True:
             result += 1
-    if current_score != 0:
+    if current_score != -1:
         return result, current_score - result
     return result
 
@@ -117,19 +118,45 @@ def random_initialization(num_variables):
     # Random Initialization
     assignment = np.ones(num_variables)
     for i in range(num_variables):
-        if random.randint(1, 2) == 1:
+        if randint(1, 2) == 1:
             assignment[i] *= -1
     return assignment
 
 
 def hw7_submission(num_variables, clauses, timeout):  # timeout is provided in case your method wants to know
-    assignment = random_initialization(num_variables)
-
+    
+    upHill = True #variable that keeps track of whether there is a better neighbor state
+    final_assignment = None #variable that will hold new state
+    assignment = random_initialization(num_variables) #random state initialization
+    
     while(True):
-        assignment(num_variables)
-        break
+        #If goal state is reached - break loop
+        if check(clauses, assignment) == True:
+            break
+        
+        upHill = False #assume no neighbor states are better than current state
+        max = -1 #max score of neighbor states
 
-    return
+        current_score = score(clauses, assignment) #score of current state
+
+        for i in range(len(assignment)): 
+            new_assignment = copy.deepcopy(assignment) 
+            new_assignment[i] *= -1 #change a single assignment of variable to generate neighbor state
+            new_score, difference = score(clauses, new_assignment, current_score) #calculate score of neighbor state
+
+            if difference > 0: #neighbor state score is greater than current state score
+                if new_score > max: #neighbor state score is greater than previous update
+                    max = new_score 
+                    final_assignment = new_assignment
+                
+                upHill = True
+
+        if upHill:
+            assignment = final_assignment
+        else:
+            assignment = random_initialization(num_variables)
+
+    return assignment
 
 
 def solve_SAT(file, save, timeout, num_variables, algorithms, verbose):
