@@ -32,6 +32,7 @@ def check(clauses, assignment):
     global VERBOSE
 
     if True:
+        print(f"There are {len(clauses)} clauses")
         print('Checking assignment {}'.format(assignment))
         print('score of assignment is {}'.format(score(clauses, assignment)))
     for clause in clauses:
@@ -116,6 +117,7 @@ def generate_solvable_problem(num_variables):
 
 def random_initialization(num_variables):
     # Random Initialization
+    print("-----Random Restart---------")
     assignment = np.ones(num_variables)
     for i in range(num_variables):
         if randint(1, 2) == 1:
@@ -124,31 +126,31 @@ def random_initialization(num_variables):
 
 
 def hw7_submission(num_variables, clauses, timeout):  # timeout is provided in case your method wants to know
-    
-    upHill = True #variable that keeps track of whether there is a better neighbor state
-    final_assignment = None #variable that will hold new state
-    assignment = random_initialization(num_variables) #random state initialization
-    
-    while(True):
-        #If goal state is reached - break loop
-        if check(clauses, assignment) == True:
+
+    upHill = True  # variable that keeps track of whether there is a better neighbor state
+    final_assignment = None  # variable that will hold new state
+    assignment = random_initialization(num_variables)  # random state initialization
+
+    while (True):
+        # If goal state is reached - break loop
+        if check(clauses, assignment):
             break
-        
-        upHill = False #assume no neighbor states are better than current state
-        max = -1 #max score of neighbor states
 
-        current_score = score(clauses, assignment) #score of current state
+        upHill = False  # assume no neighbor states are better than current state
+        max = -1  # max score of neighbor states
 
-        for i in range(len(assignment)): 
-            new_assignment = copy.deepcopy(assignment) 
-            new_assignment[i] *= -1 #change a single assignment of variable to generate neighbor state
-            new_score, difference = score(clauses, new_assignment, current_score) #calculate score of neighbor state
+        current_score = score(clauses, assignment)  # score of current state
 
-            if difference > 0: #neighbor state score is greater than current state score
-                if new_score > max: #neighbor state score is greater than previous update
-                    max = new_score 
+        for i in range(len(assignment)):
+            new_assignment = copy.deepcopy(assignment)
+            new_assignment[i] *= -1  # change a single assignment of variable to generate neighbor state
+            new_score, difference = score(clauses, new_assignment, current_score)  # calculate score of neighbor state
+
+            if difference > 0:  # neighbor state score is greater than current state score
+                if new_score > max:  # neighbor state score is greater than previous update
+                    max = new_score
                     final_assignment = new_assignment
-                
+
                 upHill = True
 
         if upHill:
