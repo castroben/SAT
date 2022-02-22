@@ -41,23 +41,33 @@ def check(clauses, assignment):
     return True
 
 
-def check_all_clauses(clauses, assignment):
-    incorrect_clauses = []
+# def check_all_clauses(clauses, assignment):
+#     incorrect_clauses = []
+#     for clause in clauses:
+#         if not check_clause(clause, assignment):
+#             incorrect_clauses.append(clause)
+#     return incorrect_clauses
+
+def check2(clauses, assignment):
+    neg_clauses = []
+    pos_clauses = []
+
     for clause in clauses:
         if not check_clause(clause, assignment):
-            incorrect_clauses.append(clause)
-    return incorrect_clauses
+            neg_clauses.append(clause)
+        else:
+            pos_clauses.append(clause)
 
+    return neg_clauses, pos_clauses
 
-def score(clauses, assignment, current_score=-1):
-    result = 0
-    for clause in clauses:
-        if check_clause(clause, assignment) is True:
-            result += 1
-    if current_score != -1:
-        return result, current_score - result
-    return result
+def score(clauses, assignment, idx, pos_clauses):
+    new_assignment = copy.deepcopy(assignment)
+    new_assignment[idx] *= -1
 
+    _, new_pos = check2(clauses, new_assignment)
+    check =  all(item in pos_clauses for item in new_pos)
+
+    return check, new_assignment
 
 def backtrack_search(num_variables, clauses):
     print('Backtracking search started')
@@ -138,36 +148,24 @@ def hw7_submission(num_variables, clauses, timeout):  # timeout is provided in c
     assignment = random_initialization(num_variables)  # random state initialization
 
     while (True):
-        # print("New iter")
-        check_result = check(clauses, assignment)
-
-        # If goal state is reached - break loop
-        if True == check_result:
+        neg_clauses, pos_clauses = check2(clauses, assignment)
+        
+        if len(neg_clauses) == 0:
             break
-        # Else, update assignment according to unsatisfied clauses.
         else:
-            upHill = False  # assume no neighbor states are better than current state
-            max = -1  # max score of neighbor states
-            current_score = score(clauses, assignment)  # score of current state
+            # What if when we don't find a solution with C prime, try another from th list of negative 
+            c_prime = sample(neg_clauses,1)[0]
 
-            for i in range(3):
-                new_assignment = copy.deepcopy(assignment)
-                idx_flip = int(abs(check_result[i])) - 1
-                new_assignment[idx_flip] *= -1  # change a single assignment of variable to generate neighbor state
-                new_score, difference = score(clauses, new_assignment, current_score)  # calculate score of neighbor state
+            for var in c_prime:
+                check, new_assignment = score(clauses, assignment, int(abs(var)) - 1, pos_clauses)
+                if check == True:
+                    assignment = new_assignment
+                    break
 
-                if difference > 0:  # neighbor state score is greater than current state score
-                    if new_score > max:  # neighbor state score is greater than previous update
-                        max = new_score
-                        final_assignment = new_assignment
-                        # print(f"New maximum is {max}")
-
-                        upHill = True
-
-            if upHill:
-                assignment = final_assignment
-            else:
-                assignment = random_initialization(num_variables)
+            if check == False:
+                # maybe randomly choose using 1 or 2 in randint to see if we change the three of C'
+                flip_idx = int(abs(sample(c_prime, 1)[0])) - 1
+                assignment[flip_idx] *= -1
 
     return assignment
 
