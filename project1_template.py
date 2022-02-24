@@ -1,6 +1,8 @@
+#codename: simon_bolivar
+
+import collections
 import random
 from random import randint, sample
-import sys
 import numpy as np
 import signal, datetime
 import argparse
@@ -17,7 +19,6 @@ def handle_maxSeconds(signum, frame):
 
 
 VERBOSE = True
-
 
 # return True if clause has a true literal
 def check_clause(clause, assignment):
@@ -40,34 +41,79 @@ def check(clauses, assignment):
     print('Check succeeded!')
     return True
 
+'''
+This function replaces the old check_clause() function and optimizes it by adding a break statement
+'''
+def check_clause2(clause, assignment):
+    clause_val = False
+    for i in clause:
+        if np.sign(i) == np.sign(assignment[abs(i) - 1]):  # assignment is 0-ref, variables 1-ref
+            clause_val = True
+            break
+    return clause_val
 
-# def check_all_clauses(clauses, assignment):
-#     incorrect_clauses = []
-#     for clause in clauses:
-#         if not check_clause(clause, assignment):
-#             incorrect_clauses.append(clause)
-#     return incorrect_clauses
-
+'''
+This function replaces the old check() function and offers more information about the state of the search by returning all the clauses that evaulate to false and true.
+'''
 def check2(clauses, assignment):
-    neg_clauses = []
-    pos_clauses = []
-
+    neg_clauses = [] # list of false clauses
+    
     for clause in clauses:
-        if not check_clause(clause, assignment):
+        if not check_clause2(clause, assignment):
             neg_clauses.append(clause)
-        else:
-            pos_clauses.append(clause)
 
-    return neg_clauses, pos_clauses
 
-def score(clauses, assignment, idx, pos_clauses):
+    return neg_clauses
+
+'''
+This score function was inspired on the WalkSAT explanation at https://www.cs.ubc.ca/~hoos/Publ/jar00.pdf
+The score is calculated for a single variable rather than an entire assigment
+score(x) = number of clauses currently satisfied that will become unsatisfied when x is flipped
+'''
+def score(clauses, assignment, idx, pos_clauses, c_prime):
     new_assignment = copy.deepcopy(assignment)
-    new_assignment[idx] *= -1
+    new_assignment[idx] *= -1 # flipping variable corresponding to idx
 
-    _, new_pos = check2(clauses, new_assignment)
-    check =  all(item in pos_clauses for item in new_pos)
+    _, new_pos = check2(clauses, new_assignment) # retrieve all satisfied clauses with new assignment
+    check =  all(item != c_prime in pos_clauses for item in new_pos) # check == True if all satisfied clauses of new assignment are in the list of all satisfied claueses of previous assignment
 
     return check, new_assignment
+
+def random_initialization(num_variables):
+    # Random Initialization
+    # print("-----Random Restart---------")
+    assignment = np.ones(num_variables)
+    for i in range(num_variables):
+        if randint(1, 2) == 1:
+            assignment[i] *= -1
+    return assignment
+
+'''
+Solution inspired on https://www.cs.ubc.ca/~hoos/Publ/jar00.pdf WalkSAT explanation.
+'''
+def hw7_submission(num_variables, clauses, timeout):  # timeout is provided in case your method wants to know
+
+    assignment = random_initialization(num_variables)  # random state initialization
+    prev_lengths = collections.defaultdict(int)
+
+    while (True):
+        neg_clauses = check2(clauses, assignment) # return number of clauses that evaluate to false
+        length_neg_clauses = len(neg_clauses)
+
+        if length_neg_clauses == 0: # no unsatisfied clauses ---> return current assignment
+            break
+        else:
+            prev_lengths[length_neg_clauses] += 1
+
+            if prev_lengths[length_neg_clauses] == num_variables: # the same length length of negative clauses has been seen num_variable times
+                prev_lengths = collections.defaultdict(int)
+                assignment = random_initialization(num_variables)
+            else:                    
+                c_prime = neg_clauses[randint(0, length_neg_clauses-1)] #choose a random clause that evaluated to false
+                flip_idx = abs(c_prime[randint(0,2)]) - 1 
+                assignment[flip_idx] *= -1            
+
+    return assignment
 
 def backtrack_search(num_variables, clauses):
     print('Backtracking search started')
@@ -130,44 +176,6 @@ def generate_solvable_problem(num_variables):
         print('One solution is {} which checks to {}'.format(target, check(clauses, target)))
 
     return clauses
-
-
-def random_initialization(num_variables):
-    # Random Initialization
-    # print("-----Random Restart---------")
-    assignment = np.ones(num_variables)
-    for i in range(num_variables):
-        if randint(1, 2) == 1:
-            assignment[i] *= -1
-    return assignment
-
-
-def hw7_submission(num_variables, clauses, timeout):  # timeout is provided in case your method wants to know
-    upHill = True  # variable that keeps track of whether there is a better neighbor state
-    final_assignment = None  # variable that will hold new state
-    assignment = random_initialization(num_variables)  # random state initialization
-
-    while (True):
-        neg_clauses, pos_clauses = check2(clauses, assignment)
-        
-        if len(neg_clauses) == 0:
-            break
-        else:
-            # What if when we don't find a solution with C prime, try another from th list of negative 
-            c_prime = sample(neg_clauses,1)[0]
-
-            for var in c_prime:
-                check, new_assignment = score(clauses, assignment, int(abs(var)) - 1, pos_clauses)
-                if check == True:
-                    assignment = new_assignment
-                    break
-
-            if check == False:
-                # maybe randomly choose using 1 or 2 in randint to see if we change the three of C'
-                flip_idx = int(abs(sample(c_prime, 1)[0])) - 1
-                assignment[flip_idx] *= -1
-
-    return assignment
 
 
 def solve_SAT(file, save, timeout, num_variables, algorithms, verbose):
